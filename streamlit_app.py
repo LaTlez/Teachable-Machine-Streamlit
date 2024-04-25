@@ -3,11 +3,16 @@ import cv2
 import numpy as np
 from keras.models import load_model
 
-# Load the class labels from labels.txt and assign to a list
-classes = [' '.join(x.split(' ')[1:]).replace('\n','') for x in open('labels.txt', 'r').readlines()]
-
 # Function to load image and preprocess it for the model
 def load_image(image):
+  """Preprocesses an image for the model (resizing, normalization).
+
+  Args:
+      image: A file-like object containing the image data.
+
+  Returns:
+      A NumPy array representing the preprocessed image, ready for model input.
+  """
   # Convert image to CV2 format (BGR)
   cv2_img = cv2.imdecode(np.frombuffer(image.getvalue(), np.uint8), cv2.IMREAD_COLOR)
   # Resize the image
@@ -18,6 +23,9 @@ def load_image(image):
   image = (image / 127.5) - 1
   return image
 
+# Load the class labels from labels.txt and assign to a list
+classes = [' '.join(x.split(' ')[1:]).replace('\n','') for x in open('labels.txt', 'r').readlines()]
+
 # Load the Keras model
 model = load_model('keras_model.h5', compile=False)
 
@@ -25,7 +33,7 @@ model = load_model('keras_model.h5', compile=False)
 st.title(f'Image Classifier - {", ".join(classes)}')
 
 # Radio buttons for image selection (upload or webcam)
-source = st.radio("Select image source:", ("Upload Image", "Webcam"))
+source = st.radio("Select image source .jpeg :", ("Upload Image", "Webcam"))
 
 if source == "Upload Image":
   # Allow user to upload an image
@@ -35,25 +43,26 @@ if source == "Upload Image":
     image = load_image(uploaded_file)
     # Make predictions
     probabilities = model.predict(image)
-    
+
     # Get the predicted class with highest probability
     predicted_class = classes[np.argmax(probabilities[0])]
     prob = round(np.max(probabilities[0]) * 100, 2)
-    
+
     # Display the uploaded image and prediction results
     st.image(uploaded_file, width=250)
     st.write(f"I'm {prob}% sure this is a {predicted_class}.")
 else:
   # Access webcam for real-time classification
   run = st.checkbox("Run Webcam")
-  video_capture = cv2.VideoCapture(0)  # Assuming webcam at index 0
+  video_capture = cv2.VideoCapture(0)
 
   while run:
     # Capture frame-by-frame
     ret, frame = video_capture.read()
 
     if not ret:
-      print("Error: Unable to capture frame from webcam")
+      # Handle potential video capture failure
+      st.error("Error: Failed to capture frame from webcam.")
       break
 
     # Preprocess the frame
@@ -75,6 +84,6 @@ else:
 
   # Release the capture and close all windows
   video_capture.release()
-  # cv2.destroyAllWindows()
+  cv2.destroyAllWindows()
 
 st.balloons()
