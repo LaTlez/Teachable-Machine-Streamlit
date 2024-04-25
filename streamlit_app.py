@@ -56,7 +56,7 @@ else:
 
 
 # Trigger when a photo has been taken and the bugger is no longer None
-if img_file_buffer is not None:
+  if img_file_buffer is not None:
     # Get the image and process it as required by the model
     # We are reshaping and converting the image to match the input the model requires.
     bytes_data = img_file_buffer.getvalue()
@@ -65,15 +65,6 @@ if img_file_buffer is not None:
     image = np.asarray(image, dtype=np.float32).reshape(1, 224, 224, 3)
     image = (image / 127.5) - 1
     probabilities = model.predict(image)
-
-  while run:
-    # Capture frame-by-frame
-    ret, frame = video_capture.read()
-
-    if not ret:
-      # Handle potential video capture failure
-      st.error("Error: Failed to capture frame from webcam.")
-      break
 
   while run:
     # Capture frame-by-frame
