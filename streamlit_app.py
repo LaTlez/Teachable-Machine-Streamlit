@@ -52,15 +52,19 @@ if source == "Upload Image":
     st.image(uploaded_file, width=250)
     st.write(f"I'm {prob}% sure this is a {predicted_class}.")
 else:
-  # Access webcam for real-time classification
-  run = st.checkbox("Run Webcam")
-  webcam_index = 0  # Change this if you have multiple webcams
+  img_file_buffer = st.camera_input("Take a picture")
 
-  try:
-    video_capture = cv2.VideoCapture(webcam_index)
-  except Exception as e:
-    st.error("Error: Failed to access webcam. Please check permissions or try a different webcam.")
-    # Optionally, log the exception details for further debugging
+
+# Trigger when a photo has been taken and the bugger is no longer None
+if img_file_buffer is not None:
+    # Get the image and process it as required by the model
+    # We are reshaping and converting the image to match the input the model requires.
+    bytes_data = img_file_buffer.getvalue()
+    cv2_img = cv2.imdecode(np.frombuffer(bytes_data, np.uint8), cv2.IMREAD_COLOR)
+    image = cv2.resize(cv2_img, (224, 224), interpolation=cv2.INTER_AREA)
+    image = np.asarray(image, dtype=np.float32).reshape(1, 224, 224, 3)
+    image = (image / 127.5) - 1
+    probabilities = model.predict(image)
 
   while run:
     # Capture frame-by-frame
