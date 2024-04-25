@@ -2,7 +2,6 @@ import streamlit as st
 import cv2
 import numpy as np
 from keras.models import load_model
-from sklearn.metrics import confusion_matrix, accuracy_score
 
 # Function to load image and preprocess it for the model
 def load_image(image):
@@ -30,46 +29,29 @@ classes = [' '.join(x.split(' ')[1:]).replace('\n','') for x in open('labels.txt
 # Load the Keras model
 model = load_model('keras_model.h5', compile=False)
 
-# Function to evaluate model performance
-def evaluate_model(y_true, y_pred):
-    """Calculates accuracy, confusion matrix, and optionally plots them.
+# Load pre-calculated metrics (assuming you have them)
+try:
+  # Load accuracy per class (replace 'accuracy_per_class.npy' with your file)
+  accuracy_per_class = np.load('accuracy_per_class.npy')
+except FileNotFoundError:
+  st.warning("Accuracy per class data not found.")
+  accuracy_per_class = None
 
-    Args:
-        y_true: True labels for the data.
-        y_pred: Predicted labels by the model.
+try:
+  # Load confusion matrix (replace 'confusion_matrix.npy' with your file)
+  confusion_matrix = np.load('confusion_matrix.npy')
+except FileNotFoundError:
+  st.warning("Confusion matrix data not found.")
+  confusion_matrix = None
 
-    Returns:
-        A dictionary containing accuracy and confusion matrix values.
-    """
-    # Calculate accuracy
-    accuracy = accuracy_score(y_true, y_pred)
+try:
+  # Load training history (replace 'training_history.npy' with your file)
+  history = np.load('training_history.npy')
+  epochs = range(len(history))
+except FileNotFoundError:
+  st.warning("Training history data not found.")
+  history = None
 
-    # Calculate confusion matrix
-    cm = confusion_matrix(y_true, y_pred)
-
-    # Optionally plot confusion matrix (using Plotly.js)
-    """
-    import plotly.graph_objects as go
-
-    fig = go.Figure(data=go.Heatmap(
-        z=cm,
-        x=classes,
-        y=classes,
-        texttemplate="%s<br>%d%%"
-    ))
-    fig.update_layout(
-        title='Confusion Matrix',
-        xaxis_title='Predicted Class',
-        yaxis_title='True Class'
-    )
-    st.plotly_chart(fig)
-    """
-
-    return {'accuracy': accuracy, 'confusion_matrix': cm}
-
-# Track predictions and true labels for evaluation (if sufficient data available)
-predictions = []
-true_labels = []
 
 # Streamlit app layout
 st.title(f'Image Classifier - {", ".join(classes)}')
@@ -99,60 +81,33 @@ if uploaded_file is not None:
     # Create a progress bar to visually represent confidence
     st.progress(prob / 100)
 
-  # Track predictions and true labels (assuming ground truth available)
-  if st.checkbox("Have ground truth label?"):
-      true_label = st.text_input("Enter the correct class label:", key="true_label")
-      if true_label:
-          true_labels.append(classes.index(true_label))
-          predictions.append(classes.index(predicted_class))
+# Display dashboard after result
+st.subheader("Evaluation Metrics")
 
-# Display dashboard after result (if sufficient data available)
-if len(true_labels) > 0:
-  # Evaluate model performance
-  evaluation_results = evaluate_model(true_labels, predictions)
-
-  # Display accuracy per class
+# Display accuracy per class (if available)
+if accuracy_per_class is not None:
   st.subheader("Accuracy per Class")
-  class_accuracies = {}
   for i, class_name in enumerate(classes):
-      true_count = sum(label == i for label in true_labels)
-      predicted_count = sum(pred == i for pred in predictions)
-      if true_count > 0:  # Avoid division by zero
-          class_accuracy = round((predicted_count / true_count) * 100, 2)
-      else:
-          class_accuracy = 0.0
-      class_accuracies[class_name] = class_accuracy
-      st.write(f"{class_name}: {class_accuracy}%")
+      class_accuracy = accuracy_per_class[i]
+      st.write(f"{class_name}: {class_accuracy:.2%}")
 
-  # Display overall accuracy
-  overall_accuracy = evaluation_results['accuracy']
-  st.subheader(f"Overall Accuracy: {overall_accuracy:.2%}")
-
-  # Optionally display confusion matrix (commented out)
-  """
-  # Display confusion matrix
+# Display confusion matrix (if available)
+if confusion_matrix is not None:
   st.subheader("Confusion Matrix")
-  cm = evaluation_results['confusion_matrix']
-  st.dataframe(cm, index=classes, columns=classes)
-  """
+  st.dataframe(confusion_matrix, index=classes, columns=classes)
 
-  # Load and display accuracy and loss history (if available)
-  try:
-      # Assuming history data is stored in a NumPy array named 'history'
-      history = np.load('training_history.npy')
-      epochs = range(len(history))
-      st.subheader("Accuracy and Loss per Epoch")
-      fig, (ax1, ax2) = st.subplots(1, 2, figsize=(12, 4))
-      ax1.plot(epochs, history[:, 0], label='Training Accuracy')
-      ax1.plot(epochs, history[:, 1], label='Validation Accuracy')
-      ax1.set_title('Accuracy')
-      ax1.legend()
-      ax2.plot(epochs, history[:, 2], label='Training Loss')
-      ax2.plot(epochs, history[:, 3], label='Validation Loss')
-      ax2.set_title('Loss')
-      ax2.legend()
-      st.pyplot(fig)
-  except FileNotFoundError:
-      st.write("Training history data not found.")
+# Display accuracy and loss per epoch (if available)
+if history is not None:
+  st.subheader("Accuracy and Loss per Epoch")
+  fig, (ax1, ax2) = st.subplots(1, 2, figsize=(12, 4))
+  ax1.plot(epochs, history[:, 0], label='Training Accuracy')
+  ax1.plot(epochs, history[:, 1], label='Validation Accuracy')
+  ax1.set_title('Accuracy')
+  ax1.legend()
+  ax2.plot(epochs, history[:, 2], label='Training Loss')
+  ax2.plot(epochs, history[:, 3], label='Validation Loss')
+  ax2.set_title('Loss')
+  ax2.legend()
+  st.pyplot(fig)
 
 st.balloons()
