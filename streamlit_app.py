@@ -66,15 +66,6 @@ else:
     image = (image / 127.5) - 1
     probabilities = model.predict(image)
 
-  while run:
-    # Capture frame-by-frame
-    ret, frame = video_capture.read()
-
-    if not ret:
-      # Handle potential video capture failure
-      st.error("Error: Failed to capture frame from webcam.")
-      break
-
     # Preprocess the frame
     frame = load_image(cv2.imencode('.jpg', frame)[1])
     # Make predictions
