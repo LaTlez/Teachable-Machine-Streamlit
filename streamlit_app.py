@@ -75,6 +75,6 @@ else:
 
   # Release the capture and close all windows
   video_capture.release()
-  cv2.destroyAllWindows()
+  # cv2.destroyAllWindows()
 
 st.balloons()
