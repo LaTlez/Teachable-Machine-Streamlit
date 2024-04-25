@@ -46,11 +46,15 @@ if source == "Upload Image":
 else:
   # Access webcam for real-time classification
   run = st.checkbox("Run Webcam")
-  video_capture = st.camera_input()
+  video_capture = cv2.VideoCapture(0)  # Assuming webcam at index 0
 
   while run:
     # Capture frame-by-frame
     ret, frame = video_capture.read()
+
+    if not ret:
+      print("Error: Unable to capture frame from webcam")
+      break
 
     # Preprocess the frame
     frame = load_image(cv2.imencode('.jpg', frame)[1])
