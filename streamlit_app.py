@@ -32,59 +32,21 @@ model = load_model('keras_model.h5', compile=False)
 # Streamlit app layout
 st.title(f'Image Classifier - {", ".join(classes)}')
 
-# Radio buttons for image selection (upload or webcam)
-source = st.radio("Select image source .jpeg :", ("Upload Image", "Webcam"))
+# Allow user to upload an image
+uploaded_file = st.file_uploader("Choose an image...", type="jpg|jpeg|png")
 
-if source == "Upload Image":
-  # Allow user to upload an image
-  uploaded_file = st.file_uploader("Choose an image...", type="jpeg")
-  if uploaded_file is not None:
-    # Load and preprocess the uploaded image
-    image = load_image(uploaded_file)
-    # Make predictions
-    probabilities = model.predict(image)
+if uploaded_file is not None:
+  # Load and preprocess the uploaded image
+  image = load_image(uploaded_file)
+  # Make predictions
+  probabilities = model.predict(image)
 
-    # Get the predicted class with highest probability
-    predicted_class = classes[np.argmax(probabilities[0])]
-    prob = round(np.max(probabilities[0]) * 100, 2)
+  # Get the predicted class with highest probability
+  predicted_class = classes[np.argmax(probabilities[0])]
+  prob = round(np.max(probabilities[0]) * 100, 2)
 
-    # Display the uploaded image and prediction results
-    st.image(uploaded_file, width=250)
-    st.write(f"I'm {prob}% sure this is a {predicted_class}.")
-else:
-  img_file_buffer = st.camera_input("Take a picture")
-
-
-# Trigger when a photo has been taken and the bugger is no longer None
-  if img_file_buffer is not None:
-    # Get the image and process it as required by the model
-    # We are reshaping and converting the image to match the input the model requires.
-    bytes_data = img_file_buffer.getvalue()
-    cv2_img = cv2.imdecode(np.frombuffer(bytes_data, np.uint8), cv2.IMREAD_COLOR)
-    image = cv2.resize(cv2_img, (224, 224), interpolation=cv2.INTER_AREA)
-    image = np.asarray(image, dtype=np.float32).reshape(1, 224, 224, 3)
-    image = (image / 127.5) - 1
-    probabilities = model.predict(image)
-
-    # Preprocess the frame
-    frame = load_image(cv2.imencode('.jpg', frame)[1])
-    # Make predictions
-    probabilities = model.predict(frame)
-
-    # Get the predicted class with highest probability
-    predicted_class = classes[np.argmax(probabilities[0])]
-    prob = round(np.max(probabilities[0]) * 100, 2)
-
-    # Display the webcam frame and prediction results
-    cv2.putText(frame, f"{predicted_class} - {prob}%", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-    st.image(frame, channels="BGR")
-
-    # Exit loop when 'q' key is pressed
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-      break
-
-  # Release the capture and close all windows
-  video_capture.release()
-  cv2.destroyAllWindows()
+  # Display the uploaded image and prediction results
+  st.image(uploaded_file, width=250)
+  st.write(f"I'm {prob}% sure this is a {predicted_class}.")
 
 st.balloons()
