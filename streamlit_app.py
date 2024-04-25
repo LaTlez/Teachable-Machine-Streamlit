@@ -29,7 +29,7 @@ source = st.radio("Select image source:", ("Upload Image", "Webcam"))
 
 if source == "Upload Image":
   # Allow user to upload an image
-  uploaded_file = st.file_uploader("Choose an image...", type="jpg|jpeg|png")
+  uploaded_file = st.file_uploader("Choose an image...", type="jpeg")
   if uploaded_file is not None:
     # Load and preprocess the uploaded image
     image = load_image(uploaded_file)
@@ -46,7 +46,7 @@ if source == "Upload Image":
 else:
   # Access webcam for real-time classification
   run = st.checkbox("Run Webcam")
-  video_capture = cv2.VideoCapture(0)
+  video_capture = st.camera_input()
 
   while run:
     # Capture frame-by-frame
