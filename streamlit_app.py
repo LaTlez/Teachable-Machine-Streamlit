@@ -54,7 +54,22 @@ if source == "Upload Image":
 else:
   # Access webcam for real-time classification
   run = st.checkbox("Run Webcam")
-  video_capture = cv2.VideoCapture(0)
+  webcam_index = 0  # Change this if you have multiple webcams
+
+  try:
+    video_capture = cv2.VideoCapture(webcam_index)
+  except Exception as e:
+    st.error("Error: Failed to access webcam. Please check permissions or try a different webcam.")
+    # Optionally, log the exception details for further debugging
+
+  while run:
+    # Capture frame-by-frame
+    ret, frame = video_capture.read()
+
+    if not ret:
+      # Handle potential video capture failure
+      st.error("Error: Failed to capture frame from webcam.")
+      break
 
   while run:
     # Capture frame-by-frame
