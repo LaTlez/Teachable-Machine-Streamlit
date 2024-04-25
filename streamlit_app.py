@@ -33,7 +33,7 @@ model = load_model('keras_model.h5', compile=False)
 st.title(f'Image Classifier - {", ".join(classes)}')
 
 # Allow user to upload an image
-uploaded_file = st.file_uploader("Choose an image... (.jpeg only!!)", type="jpeg")
+uploaded_file = st.file_uploader("Choose an image...", type="jpg|jpeg|png")
 
 if uploaded_file is not None:
   # Load and preprocess the uploaded image
@@ -45,8 +45,25 @@ if uploaded_file is not None:
   predicted_class = classes[np.argmax(probabilities[0])]
   prob = round(np.max(probabilities[0]) * 100, 2)
 
-  # Display the uploaded image and prediction results
-  st.image(uploaded_file, width=250)
-  st.write(f"I'm {prob}% sure this is a {predicted_class}.")
+  # Display the uploaded image and classification results
+  col1, col2 = st.columns(2)
+  with col1:
+    st.image(uploaded_file, width=250)
+  with col2:
+    st.subheader("Classification Results")
+    st.write(f"Predicted Class: {predicted_class}")
+    st.write(f"Confidence: {prob}%")
+
+    # Create a progress bar to visually represent confidence
+    st.progress(prob / 100)  # Assuming higher probability is better
+
+  # Display class probabilities as a chart (optional)
+  """
+  if st.checkbox("Show Class Probabilities"):
+    # Prepare data for the chart
+    class_probs = [f"{c}: {round(p*100, 2)}%" for c, p in zip(classes, probabilities[0])]
+    # Display the chart (example using Plotly.js)
+    st.plotly_chart(dict(data=[dict(x=classes, y=class_probs, type='bar')], layout=dict(title='Class Probabilities')))
+  """
 
 st.balloons()
