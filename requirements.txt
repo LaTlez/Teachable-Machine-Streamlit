@@ -1,3 +1,5 @@
 tensorflow==2.12
 opencv-python-headless
 keras
+scikit-learn  
+plotly
