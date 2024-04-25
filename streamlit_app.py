@@ -3,37 +3,74 @@ import cv2
 import numpy as np
 from keras.models import load_model
 
-# Import the class labels from labels.txt and assign to a list
+# Load the class labels from labels.txt and assign to a list
 classes = [' '.join(x.split(' ')[1:]).replace('\n','') for x in open('labels.txt', 'r').readlines()]
-# Load the Model
-model = load_model('keras_model.h5', compile = False)
 
-# Create the streamlit Title and camera_input
-st.title(f'Is it {classes[0]} or {classes[1]}!?')
-img_file_buffer = st.camera_input(f"Take a picture of {classes[0]} or {classes[1]}")
+# Function to load image and preprocess it for the model
+def load_image(image):
+  # Convert image to CV2 format (BGR)
+  cv2_img = cv2.imdecode(np.frombuffer(image.getvalue(), np.uint8), cv2.IMREAD_COLOR)
+  # Resize the image
+  image = cv2.resize(cv2_img, (224, 224), interpolation=cv2.INTER_AREA)
+  # Convert to float32
+  image = np.asarray(image, dtype=np.float32).reshape(1, 224, 224, 3)
+  # Normalize the image
+  image = (image / 127.5) - 1
+  return image
 
+# Load the Keras model
+model = load_model('keras_model.h5', compile=False)
 
-# Trigger when a photo has been taken and the bugger is no longer None
-if img_file_buffer is not None:
-    # Get the image and process it as required by the model
-    # We are reshaping and converting the image to match the input the model requires.
-    bytes_data = img_file_buffer.getvalue()
-    cv2_img = cv2.imdecode(np.frombuffer(bytes_data, np.uint8), cv2.IMREAD_COLOR)
-    image = cv2.resize(cv2_img, (224, 224), interpolation=cv2.INTER_AREA)
-    image = np.asarray(image, dtype=np.float32).reshape(1, 224, 224, 3)
-    image = (image / 127.5) - 1
+# Streamlit app layout
+st.title(f'Image Classifier - {", ".join(classes)}')
+
+# Radio buttons for image selection (upload or webcam)
+source = st.radio("Select image source:", ("Upload Image", "Webcam"))
+
+if source == "Upload Image":
+  # Allow user to upload an image
+  uploaded_file = st.file_uploader("Choose an image...", type="jpg|jpeg|png")
+  if uploaded_file is not None:
+    # Load and preprocess the uploaded image
+    image = load_image(uploaded_file)
+    # Make predictions
     probabilities = model.predict(image)
+    
+    # Get the predicted class with highest probability
+    predicted_class = classes[np.argmax(probabilities[0])]
+    prob = round(np.max(probabilities[0]) * 100, 2)
+    
+    # Display the uploaded image and prediction results
+    st.image(uploaded_file, width=250)
+    st.write(f"I'm {prob}% sure this is a {predicted_class}.")
+else:
+  # Access webcam for real-time classification
+  run = st.checkbox("Run Webcam")
+  video_capture = cv2.VideoCapture(0)
 
-    # We now have the probabilities of the image being for either class
-    # Check if either probability is over 80%, if so print the message for that classes.
-    if probabilities[0,0] > 0.8:
-        prob = round(probabilities[0,0] * 100,2)
-        st.write(f"I'm {prob}% sure that's {classes[0]}!")
-    elif probabilities[0,1] > 0.8:
-        prob = round(probabilities[0,1] * 100,2)
-        st.write(f"I'm {prob}% sure that's {classes[1]}!")
-    else:
-        st.write("I'm not confident that I know what this is! ")
+  while run:
+    # Capture frame-by-frame
+    ret, frame = video_capture.read()
 
-    # End on balloons
-    st.balloons()
+    # Preprocess the frame
+    frame = load_image(cv2.imencode('.jpg', frame)[1])
+    # Make predictions
+    probabilities = model.predict(frame)
+
+    # Get the predicted class with highest probability
+    predicted_class = classes[np.argmax(probabilities[0])]
+    prob = round(np.max(probabilities[0]) * 100, 2)
+
+    # Display the webcam frame and prediction results
+    cv2.putText(frame, f"{predicted_class} - {prob}%", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    st.image(frame, channels="BGR")
+
+    # Exit loop when 'q' key is pressed
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+      break
+
+  # Release the capture and close all windows
+  video_capture.release()
+  cv2.destroyAllWindows()
+
+st.balloons()
